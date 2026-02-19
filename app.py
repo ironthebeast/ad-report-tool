@@ -60,8 +60,38 @@ st.markdown("""
     .stButton>button {
         background: #2563eb; color: white; border: none;
         padding: 0.5rem 2rem; border-radius: 8px; font-weight: 600;
+        white-space: nowrap;
     }
     .stButton>button:hover { background: #1d4ed8; }
+
+    /* 반응형: 모바일/태블릿 */
+    @media (max-width: 768px) {
+        .main-header { font-size: 1.5rem !important; }
+        .sub-header { font-size: 0.85rem !important; }
+        /* Streamlit 컬럼이 모바일에서 세로로 쌓이도록 */
+        div[data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 0 !important;
+        }
+        .stButton>button {
+            padding: 0.5rem 1rem;
+            width: 100% !important;
+        }
+    }
+    @media (max-width: 480px) {
+        .main-header { font-size: 1.3rem !important; }
+        div[data-testid="stSidebar"] { min-width: 200px !important; }
+    }
+
+    /* 컬럼 내 요소가 잘리지 않도록 */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    div[data-testid="column"] {
+        min-width: 120px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -103,7 +133,7 @@ st.markdown('<p class="sub-header">위반 URL 입력 → 증거 수집 → HWP �
 # ═══════════════════════════════════════
 st.markdown('<span class="step-badge">STEP 1</span> **위반 콘텐츠 URL 입력 & 증거 수집**', unsafe_allow_html=True)
 
-col_url, col_btn = st.columns([4, 1])
+col_url, col_btn = st.columns([3, 1], gap="medium")
 with col_url:
     target_url = st.text_input(
         '위반 의심 콘텐츠 URL',
