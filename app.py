@@ -96,6 +96,14 @@ st.markdown("""
         div[data-testid="stSidebar"] { min-width: 200px !important; }
     }
 
+    /* 사이드바 너비 확대 + 텍스트 잘림 방지 */
+    div[data-testid="stSidebar"] {
+        min-width: 280px;
+    }
+    div[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        word-break: keep-all;
+    }
+
     /* 컬럼 내 요소가 잘리지 않도록 */
     div[data-testid="stHorizontalBlock"] {
         flex-wrap: wrap;
@@ -118,7 +126,7 @@ with st.sidebar:
     3. HWP 양식 기반 정보 입력
     4. PDF 신고서 다운로드
     5. 아래 중 택1 제출:
-       - **공정위 신고 안내** ([신고서식 + 안내](https://www.ftc.go.kr/www/contents.do?key=656))
+       - **공정위** ([신고서식+안내](https://www.ftc.go.kr/www/contents.do?key=656))
        - **국민신문고** ([민원신청](https://www.epeople.go.kr))
     """)
     st.markdown('---')
