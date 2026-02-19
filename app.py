@@ -220,6 +220,20 @@ if st.session_state.evidence:
         else:
             st.markdown('*자동 탐지로 어필리에이트 지표를 찾지 못했습니다. 수동으로 확인해주세요.*')
 
+        # 이미지/스티커 분석 결과
+        img_analysis = ev.get('image_analysis', {})
+        if img_analysis.get('image_analysis_done'):
+            st.markdown('---')
+            st.markdown('**🖼️ 이미지/스티커 광고 표시 분석:**')
+            if img_analysis.get('image_has_disclosure'):
+                st.markdown('✅ 이미지/스티커에서 광고 표시 발견')
+                for detail in ev.get('image_disclosure_details', []):
+                    st.markdown(f'  - {detail}')
+            else:
+                st.markdown('❌ 이미지/스티커에서 광고 표시 미발견')
+        elif img_analysis.get('error'):
+            st.caption(f'⚠️ 이미지 분석: {img_analysis["error"]}')
+
     with col_b:
         st.markdown('**🔎 위반 분석 결과**')
         severity = an.get('severity', '미확인')
