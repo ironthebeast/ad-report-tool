@@ -36,11 +36,10 @@ st.markdown("""
     div[data-testid="stToolbar"] { display: none !important; }
     div[data-testid="stDecoration"] { display: none !important; }
     .stDeployButton { display: none !important; }
-    /* 상단 여백 보정 */
+    /* 상단 여백 보정 — 헤더 숨긴 빈 공간 제거 */
     .stApp > header { display: none !important; }
-    .stApp { margin-top: -80px; }
+    .block-container { padding-top: 1rem !important; }
     section[data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
-    .block-container { padding-top: 2rem; }
 
     .main-header {
         font-size: 2.2rem; font-weight: 700; color: #1a1a2e;
