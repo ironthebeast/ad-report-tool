@@ -29,6 +29,19 @@ install_playwright()
 # ── CSS ──
 st.markdown("""
 <style>
+    /* Streamlit Cloud 주입 요소 숨김 */
+    header[data-testid="stHeader"] { display: none !important; }
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    div[data-testid="stToolbar"] { display: none !important; }
+    div[data-testid="stDecoration"] { display: none !important; }
+    .stDeployButton { display: none !important; }
+    /* 상단 여백 보정 */
+    .stApp > header { display: none !important; }
+    .stApp { margin-top: -80px; }
+    section[data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
+    .block-container { padding-top: 2rem; }
+
     .main-header {
         font-size: 2.2rem; font-weight: 700; color: #1a1a2e;
         margin-bottom: 0.2rem;
