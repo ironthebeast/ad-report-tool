@@ -76,8 +76,8 @@ with st.sidebar:
     3. HWP 양식 기반 정보 입력
     4. PDF 신고서 다운로드
     5. 아래 중 택1 제출:
-       - **공정위 직접** (불공정거래신고)
-       - **국민신문고** (민원신청)
+       - **공정위 신고 안내** ([신고서식 + 안내](https://www.ftc.go.kr/www/contents.do?key=656))
+       - **국민신문고** ([민원신청](https://www.epeople.go.kr))
     """)
     st.markdown('---')
     st.markdown("""
@@ -473,15 +473,16 @@ st.caption('생성된 PDF 파일을 아래 사이트 중 하나에 제출하세�
 col_a, col_b = st.columns(2)
 
 with col_a:
-    st.markdown('**🏛️ 공정거래위원회 직접 신고**')
+    st.markdown('**🏛️ 공정거래위원회 신고**')
     st.markdown('''
-    - **사이트**: [불공정거래행위신고센터](https://www.ftc.go.kr/bizCommPop.do?key=232)
-    - **장점**: 직접 처리, 전문성
+    - **사이트**: [공정위 신고서식 안내](https://www.ftc.go.kr/www/contents.do?key=656)
+    - **장점**: 신고서식 다운로드 + 국민신문고 연동
     - **준비물**: 생성한 PDF + 증거 스크린샷
+    - **참고**: 불공정거래신고는 국민신문고를 통해 접수됩니다
     ''')
     st.link_button(
-        '🔗 공정위 신고 사이트 바로가기',
-        'https://www.ftc.go.kr/bizCommPop.do?key=232',
+        '🔗 공정위 신고 안내 바로가기',
+        'https://www.ftc.go.kr/www/contents.do?key=656',
         use_container_width=True
     )
 
