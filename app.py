@@ -1,6 +1,6 @@
 """
-뒷광고 신고 도우미
-- 위반 콘텐츠 URL 입력 → 자동 증거 수집 → 신고서 자동 생성
+뒷광고 신고 도우미 — HWP 별지 제6호 서식 기반
+- 위반 콘텐츠 URL 입력 → 자동 증거 수집 → HWP 양식 기반 PDF 신고서 생성
 """
 import streamlit as st
 import subprocess
@@ -73,8 +73,8 @@ with st.sidebar:
     **사용 방법**
     1. 위반 콘텐츠 URL 입력
     2. 자동 증거 수집 실행
-    3. 신고인/피신고인 정보 입력
-    4. 신고서 DOCX 다운로드
+    3. HWP 양식 기반 정보 입력
+    4. PDF 신고서 다운로드
     5. 아래 중 택1 제출:
        - **공정위 직접** (불공정거래신고)
        - **국민신문고** (민원신청)
@@ -95,8 +95,8 @@ with st.sidebar:
     st.caption('소비자 상담: 1372')
 
 # ── 메인 ──
-st.markdown('<p class="main-header">⚖️ 뒷광고 신고 도우미</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">위반 URL만 입력하면 → 증거 수집 → 신고서 자동 작성 → DOCX 다운로드</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">⚖️ 뒷광고 신고 도우미 (HWP 양식)</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">위반 URL 입력 → 증거 수집 → HWP 별지 제6호 서식 기반 PDF 생성</p>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════
 # STEP 1: 증거 수집
@@ -148,6 +148,7 @@ if capture_btn and target_url:
         try:
             from evidence_collector import capture_screenshot, analyze_violation
             evidence_dir = os.path.join(tempfile.gettempdir(), 'ad_report_evidence')
+
             evidence = capture_screenshot(target_url, evidence_dir)
             analysis = analyze_violation(evidence)
             st.session_state.evidence = evidence
@@ -201,107 +202,175 @@ if st.session_state.evidence:
 st.markdown('---')
 
 # ═══════════════════════════════════════
-# STEP 2: 신고 정보 입력
+# STEP 2: HWP 양식 기반 정보 입력
 # ═══════════════════════════════════════
-st.markdown('<span class="step-badge">STEP 2</span> **신고 정보 입력**', unsafe_allow_html=True)
-st.caption('(*) 표시는 필수 항목입니다. 나머지는 아는 만큼만 입력하세요.')
+st.markdown('<span class="step-badge">STEP 2</span> **HWP 별지 제6호 서식 기반 정보 입력**', unsafe_allow_html=True)
+st.caption('(*) 표시는 필수 항목입니다. HWP 양식과 동일한 구조로 입력하세요.')
 
-tab1, tab2, tab3 = st.tabs(['👤 신고인 정보', '🏢 피신고인 정보', '📝 위반행위 상세'])
+tab1, tab2, tab3, tab4 = st.tabs(['👤 신고인', '🏢 피신고인', '📝 신고내용', '✅ 사전점검표 + 기타'])
 
+# ── Tab 1: 신고인 ──
 with tab1:
+    st.markdown('#### 신고인 정보')
+    
     col1, col2 = st.columns(2)
     with col1:
         reporter_name = st.text_input('성명 *', key='r_name')
-        reporter_birth = st.text_input('생년월일', placeholder='1990-01-01', key='r_birth')
-        reporter_phone = st.text_input('전화번호 *', placeholder='010-1234-5678', key='r_phone')
-    with col2:
         reporter_address = st.text_input('주소 *', key='r_addr')
+        reporter_phone = st.text_input('전화번호 *', placeholder='010-1234-5678', key='r_phone')
+        reporter_fax = st.text_input('팩스번호', key='r_fax')
+        
+    with col2:
+        reporter_birth = st.text_input('생년월일 *', placeholder='1990-01-01', key='r_birth')
+        reporter_mobile = st.text_input('휴대폰', placeholder='010-1234-5678', key='r_mobile')
         reporter_email = st.text_input('이메일', key='r_email')
+    
+    # 피신고인과의 관계 (HWP 양식과 동일)
+    st.markdown('**피신고인과의 관계 *:**')
+    relationship_options = ['소비자', '행정기관', '사회단체', '경쟁사업자', '구성사업자', '기타']
+    reporter_relationship = st.radio(
+        '피신고인과의 관계',
+        options=relationship_options,
+        index=0,
+        horizontal=True,
+        label_visibility='collapsed'
+    )
+    
+    if reporter_relationship == '기타':
+        other_relationship = st.text_input('기타 관계 구체적으로', key='other_rel')
+        reporter_relationship = other_relationship
 
+# ── Tab 2: 피신고인 ──
 with tab2:
+    st.markdown('#### 피신고인 정보')
+    
     col3, col4 = st.columns(2)
     with col3:
-        resp_name = st.text_input('사업자명 / 계정명 *', placeholder='@계정명 또는 상호', key='resp_name')
-        resp_rep = st.text_input('대표자 / 운영자', key='resp_rep')
-        resp_phone = st.text_input('전화번호', key='resp_phone')
+        resp_business_name = st.text_input('사업자명 *', placeholder='@계정명 또는 상호', key='resp_name')
+        resp_address_phone = st.text_area(
+            '주소 또는 전화번호 *', 
+            placeholder='서울시 강남구... 또는 02-123-4567',
+            height=80,
+            key='resp_addr_phone'
+        )
     with col4:
-        resp_address = st.text_input('주소 / 소재지', key='resp_addr')
-        resp_website = st.text_input('웹사이트 / SNS URL *', value=target_url or '', key='resp_web')
+        resp_representative = st.text_input('대표자 성명', key='resp_rep')
+        resp_department = st.text_input('관련부서 및 담당자', key='resp_dept')
 
+# ── Tab 3: 신고내용 ──
 with tab3:
-    violation_type = st.selectbox(
-        '위반 유형 *',
-        [
-            '경제적 이해관계 미표시 (뒷광고)',
-            '경제적 이해관계 표시 위치 부적절 (하단/더보기 뒤에 표시)',
-            '허위·과장 광고 (사실과 다른 내용)',
-            '기만적 광고 (소비자를 오인시키는 표현)',
-            '부당한 비교 광고',
-            '기타',
-        ]
+    st.markdown('#### 신고내용')
+    
+    col5, col6 = st.columns(2)
+    with col5:
+        content_media = st.selectbox(
+            '표시·광고 매체 *',
+            ['인스타그램', '유튜브', '블로그 (네이버)', '블로그 (기타)', '트위터/X',
+             '페이스북', '틱톡', '카페/커뮤니티', '기타 웹사이트'],
+            key='content_media'
+        )
+        
+    with col6:
+        content_date = st.date_input('표시·광고 일자 *', value=date.today(), key='content_date')
+    
+    # 대형 텍스트 영역들 (HWP 양식과 동일)
+    content_description = st.text_area(
+        '표시·광고의 내용 *',
+        placeholder='광고 콘텐츠의 구체적인 내용을 설명하세요. (상품명, 효과, 추천 문구 등)',
+        height=120,
+        key='content_desc',
+        help='자동 분석 결과가 있으면 참고하여 작성하세요.'
     )
-    violation_media = st.selectbox(
-        '광고 매체 *',
-        ['인스타그램', '유튜브', '블로그 (네이버)', '블로그 (기타)', '트위터/X',
-         '페이스북', '틱톡', '카페/커뮤니티', '기타 웹사이트']
-    )
-    violation_date = st.date_input('광고 게시 일자 (추정)', value=date.today())
-    violation_url = st.text_input('위반 콘텐츠 URL *', value=target_url or '', key='v_url')
-
-    # 자동 생성된 설명 + 사용자 편집
-    auto_desc = ''
+    
+    # 자동 생성된 위반 이유
+    auto_violation_reason = ''
     if st.session_state.analysis and st.session_state.analysis.get('recommendation'):
-        auto_desc = st.session_state.analysis['recommendation']
+        auto_violation_reason = st.session_state.analysis['recommendation']
     if st.session_state.evidence and st.session_state.evidence.get('affiliate_indicators'):
         indicators = '\n'.join(f'- {i}' for i in st.session_state.evidence['affiliate_indicators'])
-        auto_desc += f'\n\n[자동 탐지 결과]\n{indicators}'
-
-    violation_desc = st.text_area(
-        '위반행위 상세 설명 *',
-        value=auto_desc,
-        height=200,
-        help='자동 분석 결과가 미리 채워집니다. 직접 수정/추가할 수 있습니다.'
+        auto_violation_reason += f'\n\n[자동 탐지 결과]\n{indicators}'
+    
+    violation_reason = st.text_area(
+        '표시·광고가 위법하다고 주장하는 이유 *',
+        value=auto_violation_reason,
+        height=150,
+        key='violation_reason',
+        help='자동 분석 결과를 수정/보완할 수 있습니다.'
     )
 
+# ── Tab 4: 사전점검표 + 기타 ──
+with tab4:
+    st.markdown('#### 위반행위 사전점검표')
+    st.caption('해당하는 위반 유형을 체크하세요.')
+    
+    # HWP의 위반행위 사전점검표와 동일한 구조
+    col7, col8 = st.columns(2)
+    
+    with col7:
+        st.markdown('**제3조 (부당한 표시ㆍ광고 행위의 금지)**')
+        check_false_exaggerated = st.checkbox('1-① 거짓·과장 표시ㆍ광고', key='check_1_1')
+        check_deceptive = st.checkbox('1-② 기만적 표시ㆍ광고', key='check_1_2')
+        check_unfair_comparison = st.checkbox('1-③ 부당비교 표시ㆍ광고', key='check_1_3')
+        check_defamatory = st.checkbox('1-④ 비방적 표시ㆍ광고', key='check_1_4')
+    
+    with col8:
+        st.markdown('**기타 위반행위**')
+        check_missing_info = st.checkbox('2. 중요정보 미고시', key='check_2')
+        check_association = st.checkbox('3. 사업자단체의 표시ㆍ광고 제한행위', key='check_3')
+        check_other = st.checkbox('4. 기타', key='check_4')
+    
+    st.markdown('---')
+    st.markdown('#### 첨부자료 및 신분공개')
+    
+    attachment_desc = st.text_input(
+        '첨부자료 설명',
+        value='신고 대상 표시·광고물 또는 그 사본',
+        key='attachment_desc'
+    )
+    
+    # 신분공개 동의여부 (HWP 양식과 동일)
+    st.markdown('**신고인 신분공개 동의여부:**')
+    identity_disclosure = st.radio(
+        '신분공개',
+        options=['공개', '비공개', '사건 조치 후 공개'],
+        index=1,  # 기본값: 비공개
+        horizontal=True,
+        label_visibility='collapsed'
+    )
+    
+    # 추가 참고사항
     additional_notes = st.text_area(
-        '추가 참고사항 (선택)',
-        placeholder='추가로 알리고 싶은 내용이 있으면 입력하세요.',
+        '추가 참고사항 (첨부2 양식에 포함)',
+        placeholder='추가로 신고하고 싶은 상세 내용이 있으면 입력하세요.',
         height=100,
+        key='additional_notes'
     )
 
 st.markdown('---')
 
 # ═══════════════════════════════════════
-# STEP 3: 신고서 생성 & 다운로드
+# STEP 3: PDF 신고서 생성 & 다운로드
 # ═══════════════════════════════════════
-st.markdown('<span class="step-badge">STEP 3</span> **신고서 생성 & 다운로드**', unsafe_allow_html=True)
+st.markdown('<span class="step-badge">STEP 3</span> **PDF 신고서 생성 & 다운로드**', unsafe_allow_html=True)
 
-# 법적 근거 매핑
-legal_basis_map = {
-    '경제적 이해관계 미표시 (뒷광고)': '표시·광고의 공정화에 관한 법률 제3조 제1항 제1호 (거짓·과장의 표시광고) 및 추천·보증 등에 관한 표시·광고 심사지침 위반',
-    '경제적 이해관계 표시 위치 부적절 (하단/더보기 뒤에 표시)': '추천·보증 등에 관한 표시·광고 심사지침 제7조 (경제적 이해관계 등의 표시 기준) 위반',
-    '허위·과장 광고 (사실과 다른 내용)': '표시·광고의 공정화에 관한 법률 제3조 제1항 제1호 (거짓·과장의 표시광고)',
-    '기만적 광고 (소비자를 오인시키는 표현)': '표시·광고의 공정화에 관한 법률 제3조 제1항 제2호 (기만적인 표시광고)',
-    '부당한 비교 광고': '표시·광고의 공정화에 관한 법률 제3조 제1항 제3호 (부당하게 비교하는 표시광고)',
-    '기타': '표시·광고의 공정화에 관한 법률 제3조',
-}
-
-generate_btn = st.button('📄 신고서 생성 (DOCX)', type='primary', use_container_width=True)
+generate_btn = st.button('📄 HWP 양식 기반 PDF 생성', type='primary', use_container_width=True)
 
 if generate_btn:
     # 필수 항목 검증
     missing = []
     if not reporter_name: missing.append('신고인 성명')
-    if not reporter_phone: missing.append('신고인 전화번호')
+    if not reporter_birth: missing.append('신고인 생년월일')
     if not reporter_address: missing.append('신고인 주소')
-    if not resp_name: missing.append('피신고인 사업자명/계정명')
-    if not violation_url: missing.append('위반 콘텐츠 URL')
-    if not violation_desc: missing.append('위반행위 상세 설명')
+    if not reporter_phone: missing.append('신고인 전화번호')
+    if not resp_business_name: missing.append('피신고인 사업자명')
+    if not resp_address_phone: missing.append('피신고인 주소 또는 전화번호')
+    if not content_description: missing.append('표시·광고의 내용')
+    if not violation_reason: missing.append('위법하다고 주장하는 이유')
 
     if missing:
         st.error(f'필수 항목을 입력해주세요: {", ".join(missing)}')
     else:
-        with st.spinner('신고서를 생성하고 있습니다...'):
+        with st.spinner('HWP 양식 기반 PDF를 생성하고 있습니다...'):
             from report_generator import generate_report
 
             ev = st.session_state.evidence or {}
@@ -313,177 +382,154 @@ if generate_btn:
                 all_screenshots.append(screenshot)
             all_screenshots.extend(manual_shots)
 
+            # HWP 양식에 맞는 데이터 구조 생성
             report_data = {
                 'reporter': {
                     'name': reporter_name,
                     'birth_date': reporter_birth,
                     'address': reporter_address,
                     'phone': reporter_phone,
+                    'mobile': reporter_mobile,
+                    'fax': reporter_fax,
                     'email': reporter_email,
+                    'relationship': reporter_relationship
                 },
                 'respondent': {
-                    'business_name': resp_name,
-                    'representative': resp_rep,
-                    'address': resp_address,
-                    'phone': resp_phone,
-                    'website': resp_website,
+                    'business_name': resp_business_name,
+                    'representative': resp_representative,
+                    'address_phone': resp_address_phone,
+                    'department': resp_department
                 },
-                'violation': {
-                    'type': violation_type,
-                    'media': violation_media,
-                    'date': violation_date.strftime('%Y-%m-%d'),
-                    'url': violation_url,
-                    'description': violation_desc,
-                    'legal_basis': legal_basis_map.get(violation_type, ''),
+                'report_content': {
+                    'media': content_media,
+                    'date': content_date.strftime('%Y-%m-%d'),
+                    'content': content_description,
+                    'violation_reason': violation_reason
                 },
+                'checklist': {
+                    'false_exaggerated': check_false_exaggerated,
+                    'deceptive': check_deceptive,
+                    'unfair_comparison': check_unfair_comparison,
+                    'defamatory': check_defamatory,
+                    'missing_info': check_missing_info,
+                    'association_restriction': check_association,
+                    'other': check_other
+                },
+                'attachment_desc': attachment_desc,
+                'identity_disclosure': identity_disclosure,
                 'evidence': {
                     'screenshot_path': all_screenshots[0] if all_screenshots else None,
                     'extra_screenshots': all_screenshots[1:] if len(all_screenshots) > 1 else [],
-                    'url': ev.get('url', violation_url),
+                    'url': ev.get('url', target_url or ''),
                     'captured_at': ev.get('captured_at', ''),
                     'analysis_text': st.session_state.analysis.get('recommendation', '') if st.session_state.analysis else '',
                     'affiliate_indicators': ev.get('affiliate_indicators', []),
-                    'additional_notes': additional_notes,
-                },
+                    'additional_notes': additional_notes
+                }
             }
 
-            # session에 저장 (바로 제출 시 재사용)
-            st.session_state.report_data = report_data
-            st.session_state.all_screenshots = all_screenshots
-
-            # 파일 생성
-            output_dir = os.path.join(tempfile.gettempdir(), 'ad_report_output')
-            os.makedirs(output_dir, exist_ok=True)
-            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-            output_path = os.path.join(output_dir, f'신고서_{ts}.docx')
-
+            # PDF 생성
+            output_dir = tempfile.gettempdir()
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'뒷광고_신고서_{timestamp}.pdf'
+            save_path = os.path.join(output_dir, filename)
+            
             try:
-                generate_report(report_data, output_path)
-
-                st.markdown('<div class="success-box">✅ <b>신고서가 생성되었습니다!</b></div>', unsafe_allow_html=True)
-
+                generate_report(report_data, save_path)
+                
                 # 다운로드 버튼
-                with open(output_path, 'rb') as f:
-                    st.download_button(
-                        label='📥 신고서 다운로드 (DOCX)',
-                        data=f.read(),
-                        file_name=f'부당표시광고_신고서_{ts}.docx',
-                        mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        type='primary',
-                    )
-
-                # 스크린샷도 별도 다운로드
-                if ev.get('screenshot_path') and os.path.exists(ev['screenshot_path']):
-                    with open(ev['screenshot_path'], 'rb') as f:
-                        st.download_button(
-                            label='📥 증거 스크린샷 다운로드 (PNG)',
-                            data=f.read(),
-                            file_name=f'증거_스크린샷_{ts}.png',
-                            mime='image/png',
-                        )
-
-                # 제출 안내
-                st.markdown('---')
-                st.markdown('### 📮 제출 방법')
-                col_s1, col_s2, col_s3 = st.columns(3)
-                with col_s1:
-                    st.markdown("""
-                    **방법 1: 공정위 직접 신고 (추천)**
-                    1. [ftc.go.kr](https://www.ftc.go.kr) 접속
-                    2. **민원·참여 → 불공정거래신고**
-                    3. 본인인증 → 기본정보 작성
-                    4. 신고내용 + 증빙자료 첨부
-                    5. 신청 완료
-                    """)
-                with col_s2:
-                    st.markdown("""
-                    **방법 2: 국민신문고 (민원신청)**
-                    1. [epeople.go.kr](https://www.epeople.go.kr) 접속
-                    2. 로그인 → **민원신청**
-                    3. 접수기관: **"공정거래위원회"** 선택
-                    4. 신고서(DOCX) + 스크린샷 첨부
-                    5. 접수번호로 진행상황 추적 가능
-                    """)
-                with col_s3:
-                    st.markdown("""
-                    **방법 3: 전화/우편**
-                    - 공정위 상담: **1670-0007**
-                    - 소비자24: **1372**
-                    - 우편: 관할 지방공정거래사무소
-                    """)
-
+                with open(save_path, 'rb') as pdf_file:
+                    pdf_data = pdf_file.read()
+                    
+                st.success('✅ PDF 신고서가 생성되었습니다!')
+                
+                # 파일 정보 표시
+                st.markdown(f'**📄 파일명**: {filename}')
+                st.markdown(f'**📏 파일크기**: {len(pdf_data):,} bytes')
+                
+                st.download_button(
+                    label='📥 PDF 다운로드',
+                    data=pdf_data,
+                    file_name=filename,
+                    mime='application/pdf',
+                    use_container_width=True
+                )
+                
+                # session state에 저장
+                st.session_state.report_data = report_data
+                
             except Exception as e:
-                st.error(f'신고서 생성 중 오류: {str(e)}')
+                st.error(f'PDF 생성 중 오류가 발생했습니다: {str(e)}')
+                st.error('시스템 폰트 문제일 수 있습니다. 관리자에게 문의해주세요.')
+
+st.markdown('---')
 
 # ═══════════════════════════════════════
-# STEP 4: 신고 제출 (링크 + 복사)
+# STEP 4: 신고 제출 링크
 # ═══════════════════════════════════════
 st.markdown('<span class="step-badge">STEP 4</span> **신고 제출**', unsafe_allow_html=True)
-st.caption('아래 민원 내용을 복사한 뒤, 링크를 클릭하여 제출 사이트에서 붙여넣기하세요.')
+st.caption('생성된 PDF 파일을 아래 사이트 중 하나에 제출하세요.')
 
+col_a, col_b = st.columns(2)
 
-def _build_complaint_text(report_data: dict) -> str:
-    """민원 내용 텍스트 생성"""
-    v = report_data.get('violation', {})
-    r = report_data.get('respondent', {})
-    e = report_data.get('evidence', {})
+with col_a:
+    st.markdown('**🏛️ 공정거래위원회 직접 신고**')
+    st.markdown('''
+    - **사이트**: [불공정거래행위신고센터](https://www.ftc.go.kr/bizCommPop.do?key=232)
+    - **장점**: 직접 처리, 전문성
+    - **준비물**: 생성한 PDF + 증거 스크린샷
+    ''')
+    st.link_button(
+        '🔗 공정위 신고 사이트 바로가기',
+        'https://www.ftc.go.kr/bizCommPop.do?key=232',
+        use_container_width=True
+    )
 
-    lines = [
-        '[ 부당한 표시·광고 신고 ]',
-        '',
-        f'■ 피신고인: {r.get("business_name", "")}',
-        f'■ 피신고인 웹사이트/SNS: {r.get("website", "")}',
-        '',
-        f'■ 위반 유형: {v.get("type", "")}',
-        f'■ 광고 매체: {v.get("media", "")}',
-        f'■ 광고 일자: {v.get("date", "")}',
-        f'■ 광고 URL: {v.get("url", "")}',
-        '',
-        f'■ 관련 법률: {v.get("legal_basis", "")}',
-        '',
-        '■ 위반행위 상세:',
-        v.get('description', ''),
-        '',
-    ]
+with col_b:
+    st.markdown('**🏛️ 국민신문고 민원신청**')
+    st.markdown('''
+    - **사이트**: [국민신문고](https://www.epeople.go.kr)
+    - **장점**: 처리 과정 추적 가능
+    - **기관 선택**: 공정거래위원회
+    ''')
+    st.link_button(
+        '🔗 국민신문고 바로가기',
+        'https://www.epeople.go.kr',
+        use_container_width=True
+    )
 
-    indicators = e.get('affiliate_indicators', [])
-    if indicators:
-        lines.append('■ 자동 탐지된 어필리에이트 지표:')
-        for ind in indicators:
-            lines.append(f'  - {ind}')
-        lines.append('')
+# 추가 안내
+st.markdown("""
+<div class="info-box">
+<strong>📋 제출 시 참고사항</strong><br>
+• <strong>PDF 신고서</strong>: 방금 생성한 파일을 첨부하세요<br>
+• <strong>증거자료</strong>: 스크린샷도 함께 첨부하세요<br>
+• <strong>처리기간</strong>: 일반적으로 30일 내외 (사안에 따라 변동)<br>
+• <strong>문의전화</strong>: 공정위 상담센터 1670-0007
+</div>
+""", unsafe_allow_html=True)
 
-    analysis = e.get('analysis_text', '')
-    if analysis:
-        lines.append(f'■ AI 분석 결과: {analysis}')
-        lines.append('')
+# 법적 고지
+with st.expander('⚠️ 중요 법적 고지사항'):
+    st.markdown("""
+    **허위 신고 금지**
+    - 고의로 허위 사실을 신고하면 법적 처벌을 받을 수 있습니다.
+    - 확실한 증거가 있는 경우에만 신고해주세요.
+    
+    **개인정보 보호**
+    - 입력하신 개인정보는 신고서 생성에만 사용되며 서버에 저장되지 않습니다.
+    - 브라우저를 닫으면 모든 정보가 삭제됩니다.
+    
+    **면책 조항**
+    - 이 도구는 신고서 작성을 도와드리는 것이며, 신고 결과에 대한 책임은 신고자에게 있습니다.
+    - 법적 조언이 필요한 경우 전문가와 상담하시기 바랍니다.
+    """)
 
-    notes = e.get('additional_notes', '')
-    if notes:
-        lines.append(f'■ 추가 참고사항: {notes}')
-        lines.append('')
-
-    lines.append('※ 상세 신고서(DOCX)와 증거 스크린샷을 첨부파일로 함께 제출합니다.')
-    lines.append('※ 본 신고 내용은 「표시·광고의 공정화에 관한 법률」에 근거합니다.')
-
-    return '\n'.join(lines)
-
-
-# 민원 텍스트 미리보기 (report_data가 있으면)
-if st.session_state.get('report_data'):
-    complaint_text = _build_complaint_text(st.session_state.report_data)
-    st.text_area('민원 내용 (복사해서 사용)', value=complaint_text, height=200)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.link_button('🔗 공정위 불공정거래신고 →', 'https://www.ftc.go.kr/www/contents.do?key=320')
-    st.caption('민원·참여 → 불공정거래신고 → 표시광고 선택')
-with col2:
-    st.link_button('🔗 국민신문고 민원신청 →', 'https://www.epeople.go.kr')
-    st.caption('민원신청 → 접수기관: 공정거래위원회 선택')
-
-# ── 하단 정보 ──
+# 푸터
 st.markdown('---')
-st.info('🔒 이 도구는 데이터를 저장하지 않습니다. 입력한 정보는 세션 종료 시 자동 삭제됩니다.')
-st.caption('이 도구는 표시·광고의 공정화에 관한 법률에 따른 신고를 돕기 위한 보조 도구입니다. 법률 상담이 필요한 경우 전문가와 상의하세요.')
-st.caption('생성된 신고서는 DOCX 형식으로, 한글(HWP) 및 MS Word에서 열어 수정할 수 있습니다.')
+st.markdown("""
+<div style='text-align: center; color: #6b7280; font-size: 0.9rem;'>
+    <p>⚖️ <strong>뒷광고 신고 도우미</strong> — 건전한 디지털 광고 환경 조성을 위해</p>
+    <p>HWP 별지 제6호 서식 기반 • PDF 출력 • 공정거래위원회 호환</p>
+</div>
+""", unsafe_allow_html=True)
