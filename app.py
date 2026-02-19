@@ -536,11 +536,6 @@ with col_a:
     - **준비물**: 생성한 PDF + 증거 스크린샷
     - **참고**: 불공정거래신고는 국민신문고를 통해 접수됩니다
     ''')
-    st.link_button(
-        '🔗 공정위 신고 안내 바로가기',
-        'https://www.ftc.go.kr/www/contents.do?key=656',
-        use_container_width=True
-    )
 
 with col_b:
     st.markdown('**🏛️ 국민신문고 민원신청**')
@@ -549,6 +544,18 @@ with col_b:
     - **장점**: 처리 과정 추적 가능
     - **기관 선택**: 공정거래위원회
     ''')
+
+# 버튼을 별도 row로 분리하여 항상 같은 높이에 정렬
+col_btn_a, col_btn_b = st.columns(2)
+
+with col_btn_a:
+    st.link_button(
+        '🔗 공정위 신고 안내 바로가기',
+        'https://www.ftc.go.kr/www/contents.do?key=656',
+        use_container_width=True
+    )
+
+with col_btn_b:
     st.link_button(
         '🔗 국민신문고 바로가기',
         'https://www.epeople.go.kr',
