@@ -161,7 +161,7 @@ def analyze_image_for_ad_disclosure(screenshot_path: str) -> dict:
         import google.generativeai as genai
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
 
         # 이미지 읽기
         with open(screenshot_path, 'rb') as f:
@@ -219,7 +219,7 @@ def analyze_image_for_ad_disclosure(screenshot_path: str) -> dict:
         # google-generativeai 미설치 시 REST API fallback
         try:
             import urllib.request
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
             with open(screenshot_path, 'rb') as f:
                 img_b64 = base64.b64encode(f.read()).decode('utf-8')
