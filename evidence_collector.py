@@ -110,6 +110,9 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
 
             browser.close()
 
+    except Exception as e:
+        result['error'] = str(e)
+
     # 이미지/스티커 내 광고 표시 분석 (Gemini Vision)
     if result.get('screenshot_path') and not result.get('error'):
         try:
@@ -126,9 +129,6 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
                 result['ad_disclosure_source'] = 'text'  # 텍스트에서 발견
         except Exception as e:
             result['image_analysis'] = {'error': str(e), 'image_analysis_done': False}
-
-    except Exception as e:
-        result['error'] = str(e)
 
     # 메타데이터 저장
     meta_file = os.path.join(save_dir, f'metadata_{domain}_{ts}.json')
