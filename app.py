@@ -20,11 +20,31 @@ st.set_page_config(
 
 @st.cache_resource
 def install_playwright():
-    """Streamlit Cloud에서 Playwright Chromium 자동 설치"""
-    subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+    """
+    Streamlit Cloud에서 Playwright Chromium 자동 설치.
+    - check=True 제거: 설치 실패 시 예외가 캐싱되어 앱 영구 먹통 방지
+    - 이미 설치된 경우 재설치 스킵 (속도 및 메모리 절약)
+    """
+    try:
+        # 이미 설치됐는지 확인 (빠른 경로)
+        check = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "--dry-run"],
+            capture_output=True, timeout=10,
+        )
+        if check.returncode == 0 and b"chromium" not in check.stdout:
+            return True  # 이미 설치됨
+
+        result = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            capture_output=True,
+            timeout=120,   # 타임아웃 명시 (기본값 없음 → 무한 대기 방지)
+        )
+        return result.returncode == 0
+    except Exception:
+        return False   # 설치 실패해도 앱은 계속 실행 (수동 스크린샷 업로드 기능은 정상 동작)
 
 
-install_playwright()
+_pw_ready = install_playwright()
 
 # ── CSS ──
 st.markdown("""
@@ -194,17 +214,24 @@ if uploaded_screenshots:
     st.success(f'{len(uploaded_screenshots)}개 스크린샷이 첨부되었습니다.')
 
 if capture_btn and target_url:
-    with st.spinner('증거를 수집하고 있습니다... (스크린샷 캡처 + 어필리에이트 지표 분석)'):
-        try:
-            from evidence_collector import capture_screenshot, analyze_violation
-            evidence_dir = os.path.join(tempfile.gettempdir(), 'ad_report_evidence')
+    if not _pw_ready:
+        st.warning(
+            "⚠️ Playwright(브라우저 자동화)가 현재 로딩 중이거나 설치에 실패했습니다. "
+            "잠시 후 다시 시도하거나, 아래 **스크린샷 직접 업로드** 기능을 사용해 주세요."
+        )
+    else:
+        with st.spinner('증거를 수집하고 있습니다... (스크린샷 캡처 + 어필리에이트 지표 분석)'):
+            try:
+                from evidence_collector import capture_screenshot, analyze_violation
+                evidence_dir = os.path.join(tempfile.gettempdir(), 'ad_report_evidence')
 
-            evidence = capture_screenshot(target_url, evidence_dir)
-            analysis = analyze_violation(evidence)
-            st.session_state.evidence = evidence
-            st.session_state.analysis = analysis
-        except Exception as e:
-            st.error(f'증거 수집 중 오류가 발생했습니다: {str(e)}')
+                evidence = capture_screenshot(target_url, evidence_dir)
+                analysis = analyze_violation(evidence)
+                st.session_state.evidence = evidence
+                st.session_state.analysis = analysis
+            except Exception as e:
+                st.error(f'증거 수집 중 오류가 발생했습니다: {str(e)}')
+                st.info("💡 스크린샷을 직접 촬영해 아래 업로드 기능을 사용할 수 있습니다.")
 
 # 수집 결과 표시
 if st.session_state.evidence:

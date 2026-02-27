@@ -33,85 +33,144 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     screenshot_file = os.path.join(save_dir, f'evidence_{domain}_{ts}.png')
 
+    browser = None
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            # ── 메모리 절약: 불필요한 리소스 차단 ─────────────────────
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-dev-shm-usage',   # Streamlit Cloud /dev/shm 제한 우회
+                    '--disable-gpu',
+                    '--single-process',          # 메모리 절약
+                    '--disable-extensions',
+                ]
+            )
             context = browser.new_context(
                 viewport={'width': 1280, 'height': 900},
                 locale='ko-KR',
-                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                # 이미지/폰트 로딩 차단으로 메모리 절약
+                java_script_enabled=True,
             )
+            # 이미지·미디어 요청 차단 (스크린샷 전에는 로드, 텍스트 분석만 할 때는 차단)
             page = context.new_page()
-            page.goto(url, timeout=30000, wait_until='networkidle')
-            page.wait_for_timeout(2000)
+            page.set_default_timeout(20000)   # 전체 기본 타임아웃 20초
 
-            # 풀페이지 스크린샷
-            page.screenshot(path=screenshot_file, full_page=True)
-            result['screenshot_path'] = screenshot_file
+            # ── networkidle 대신 domcontentloaded 사용 ─────────────────
+            # networkidle: Instagram/YouTube 같은 SPA에서 절대 종료 안 됨 → 타임아웃 크래시
+            # domcontentloaded: HTML+JS 로드 완료 즉시 진행
+            try:
+                page.goto(url, timeout=20000, wait_until='domcontentloaded')
+            except Exception:
+                # 타임아웃이어도 이미 로드된 내용으로 진행
+                pass
 
-            # 페이지 제목
-            result['page_title'] = page.title()
+            # 동적 콘텐츠 안정화 대기 (최대 2초)
+            try:
+                page.wait_for_timeout(2000)
+            except Exception:
+                pass
 
-            # 메타 정보
-            meta_desc = page.query_selector('meta[name="description"]')
-            if meta_desc:
-                result['meta_description'] = meta_desc.get_attribute('content') or ''
+            # ── 스크린샷 캡처 ──────────────────────────────────────────
+            # full_page=True는 매우 긴 페이지에서 메모리 폭발 → clip으로 제한
+            try:
+                page.screenshot(
+                    path=screenshot_file,
+                    full_page=False,             # 뷰포트만 캡처 (메모리 절약)
+                    clip={'x': 0, 'y': 0, 'width': 1280, 'height': 1800},  # 상단 1800px
+                    timeout=15000,
+                )
+                result['screenshot_path'] = screenshot_file
+            except Exception as ss_err:
+                result['error'] = f'스크린샷 실패: {ss_err}'
 
-            author = page.query_selector('meta[name="author"]')
-            if author:
-                result['author'] = author.get_attribute('content') or ''
+            # ── 메타데이터 수집 ────────────────────────────────────────
+            try:
+                result['page_title'] = page.title()
+            except Exception:
+                pass
 
-            # 페이지 텍스트 (본문만)
-            body_text = page.evaluate('() => document.body?.innerText?.substring(0, 5000) || ""')
+            try:
+                meta_desc = page.query_selector('meta[name="description"]')
+                if meta_desc:
+                    result['meta_description'] = meta_desc.get_attribute('content') or ''
+                author = page.query_selector('meta[name="author"]')
+                if author:
+                    result['author'] = author.get_attribute('content') or ''
+            except Exception:
+                pass
+
+            # ── 페이지 텍스트 ──────────────────────────────────────────
+            try:
+                body_text = page.evaluate(
+                    '() => document.body?.innerText?.substring(0, 5000) || ""'
+                )
+            except Exception:
+                body_text = ''
             result['page_text'] = body_text
 
-            # 광고 표시 여부 검사
-            ad_keywords = ['#광고', '#ad', '광고포함', '협찬', '유료광고', '경제적 대가',
-                          '소정의 원고료', '대가를 받', '협찬을 받', '#sponsored',
-                          '광고 포함', '파트너십', '제휴 링크']
+            # ── 광고 표시 키워드 검사 ──────────────────────────────────
+            ad_keywords = [
+                '#광고', '#ad', '광고포함', '협찬', '유료광고', '경제적 대가',
+                '소정의 원고료', '대가를 받', '협찬을 받', '#sponsored',
+                '광고 포함', '파트너십', '제휴 링크',
+            ]
             text_lower = body_text.lower()
             for kw in ad_keywords:
                 if kw.lower() in text_lower:
                     result['has_ad_disclosure'] = True
                     break
 
-            # 어필리에이트 지표 탐지
+            # ── 어필리에이트 지표 탐지 ────────────────────────────────
             aff_indicators = []
-            # 링크에 어필리에이트 파라미터 확인
-            links = page.evaluate('''() => {
-                return Array.from(document.querySelectorAll('a[href]'))
-                    .map(a => a.href)
-                    .filter(h => /ref=|affiliate|aff_id|utm_|click_id|partner|tracking/i.test(h))
-                    .slice(0, 10);
-            }''')
-            if links:
-                aff_indicators.append(f'어필리에이트 링크 {len(links)}개 발견')
+            try:
+                links = page.evaluate('''() => {
+                    return Array.from(document.querySelectorAll('a[href]'))
+                        .map(a => a.href)
+                        .filter(h => /ref=|affiliate|aff_id|utm_|click_id|partner|tracking/i.test(h))
+                        .slice(0, 10);
+                }''')
+                if links:
+                    aff_indicators.append(f'어필리에이트 링크 {len(links)}개 발견')
+            except Exception:
+                pass
 
-            # 할인 코드 패턴
-            discount_patterns = page.evaluate('''() => {
-                const text = document.body.innerText;
-                const patterns = text.match(/할인\\s*코드[:\\s]*[A-Za-z0-9]+|쿠폰\\s*코드[:\\s]*[A-Za-z0-9]+|discount\\s*code[:\\s]*[A-Za-z0-9]+/gi);
-                return patterns ? patterns.slice(0, 5) : [];
-            }''')
-            if discount_patterns:
-                aff_indicators.append(f'할인/쿠폰 코드 발견: {", ".join(discount_patterns[:3])}')
+            try:
+                discount_patterns = page.evaluate('''() => {
+                    const text = document.body.innerText;
+                    const patterns = text.match(/할인\\s*코드[:\\s]*[A-Za-z0-9]+|쿠폰\\s*코드[:\\s]*[A-Za-z0-9]+|discount\\s*code[:\\s]*[A-Za-z0-9]+/gi);
+                    return patterns ? patterns.slice(0, 5) : [];
+                }''')
+                if discount_patterns:
+                    aff_indicators.append(f'할인/쿠폰 코드 발견: {", ".join(discount_patterns[:3])}')
+            except Exception:
+                pass
 
-            # 구매 링크
-            buy_links = page.evaluate('''() => {
-                return Array.from(document.querySelectorAll('a'))
-                    .filter(a => /구매|buy|shop|purchase|주문/i.test(a.innerText))
-                    .map(a => ({text: a.innerText.trim().substring(0, 50), href: a.href}))
-                    .slice(0, 5);
-            }''')
-            if buy_links:
-                aff_indicators.append(f'구매 유도 링크 {len(buy_links)}개 발견')
+            try:
+                buy_links = page.evaluate('''() => {
+                    return Array.from(document.querySelectorAll('a'))
+                        .filter(a => /구매|buy|shop|purchase|주문/i.test(a.innerText))
+                        .map(a => ({text: a.innerText.trim().substring(0, 50), href: a.href}))
+                        .slice(0, 5);
+                }''')
+                if buy_links:
+                    aff_indicators.append(f'구매 유도 링크 {len(buy_links)}개 발견')
+            except Exception:
+                pass
 
             result['affiliate_indicators'] = aff_indicators
 
-            browser.close()
-
     except Exception as e:
         result['error'] = str(e)
+    finally:
+        # ── 브라우저 반드시 종료 (메모리 누수 방지) ──────────────────
+        try:
+            if browser:
+                browser.close()
+        except Exception:
+            pass
 
     # 이미지/스티커 내 광고 표시 분석 (Gemini Vision)
     if result.get('screenshot_path') and not result.get('error'):
