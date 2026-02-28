@@ -6,6 +6,7 @@ import streamlit as st
 import subprocess
 import sys
 import os
+import gc
 import tempfile
 from datetime import datetime, date
 
@@ -37,11 +38,11 @@ def install_playwright():
         result = subprocess.run(
             [sys.executable, "-m", "playwright", "install", "chromium"],
             capture_output=True,
-            timeout=120,   # 타임아웃 명시 (기본값 없음 → 무한 대기 방지)
+            timeout=120,
         )
         return result.returncode == 0
     except Exception:
-        return False   # 설치 실패해도 앱은 계속 실행 (수동 스크린샷 업로드 기능은 정상 동작)
+        return False
 
 
 _pw_ready = install_playwright()
@@ -229,7 +230,9 @@ if capture_btn and target_url:
                 analysis = analyze_violation(evidence)
                 st.session_state.evidence = evidence
                 st.session_state.analysis = analysis
+                gc.collect()
             except Exception as e:
+                gc.collect()
                 st.error(f'증거 수집 중 오류가 발생했습니다: {str(e)}')
                 st.info("💡 스크린샷을 직접 촬영해 아래 업로드 기능을 사용할 수 있습니다.")
 

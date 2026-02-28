@@ -1,0 +1,15 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    # 매 5분마다 실행
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # 수동 실행도 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: |
+          curl -sf --max-time 30 "https://ad-report.streamlit.app/" -o /dev/null && echo "OK" || echo "App may be sleeping"

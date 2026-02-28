@@ -36,15 +36,16 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
     browser = None
     try:
         with sync_playwright() as p:
-            # ── 메모리 절약: 불필요한 리소스 차단 ─────────────────────
             browser = p.chromium.launch(
                 headless=True,
                 args=[
                     '--no-sandbox',
-                    '--disable-dev-shm-usage',   # Streamlit Cloud /dev/shm 제한 우회
+                    '--disable-dev-shm-usage',
                     '--disable-gpu',
-                    '--single-process',          # 메모리 절약
+                    '--single-process',
                     '--disable-extensions',
+                    '--disable-background-networking',
+                    '--disable-default-apps',
                 ]
             )
             context = browser.new_context(
@@ -162,15 +163,20 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
 
             result['affiliate_indicators'] = aff_indicators
 
+            # 명시적 리소스 정리
+            page.close()
+            context.close()
+            browser.close()
+            browser = None
+
     except Exception as e:
         result['error'] = str(e)
     finally:
-        # ── 브라우저 반드시 종료 (메모리 누수 방지) ──────────────────
-        try:
-            if browser:
+        if browser:
+            try:
                 browser.close()
-        except Exception:
-            pass
+            except Exception:
+                pass
 
     # 이미지/스티커 내 광고 표시 분석 (Gemini Vision)
     if result.get('screenshot_path') and not result.get('error'):
@@ -220,7 +226,10 @@ def analyze_image_for_ad_disclosure(screenshot_path: str) -> dict:
         import google.generativeai as genai
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(
+            'gemini-2.5-flash',
+            generation_config={'max_output_tokens': 1024},
+        )
 
         # 이미지 읽기
         with open(screenshot_path, 'rb') as f:

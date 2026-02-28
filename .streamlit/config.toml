@@ -2,6 +2,8 @@
 headless = true
 port = 8501
 enableCORS = false
+maxUploadSize = 10
+maxMessageSize = 50
 
 [client]
 toolbarMode = "minimal"
