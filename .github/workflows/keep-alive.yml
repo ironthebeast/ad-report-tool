@@ -2,14 +2,56 @@ name: Keep Streamlit App Alive
 
 on:
   schedule:
-    # 매 5분마다 실행
-    - cron: '*/5 * * * *'
-  workflow_dispatch: # 수동 실행도 가능
+    # 매 3분마다 실행 (5분이면 Streamlit Cloud sleep 타이밍에 걸릴 수 있음)
+    - cron: '*/3 * * * *'
+  workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
-      - name: Ping Streamlit App
+      - name: Ping Streamlit App (with retry)
+        env:
+          APP_URL: "https://ad-report.streamlit.app/"
         run: |
-          curl -sf --max-time 30 "https://ad-report.streamlit.app/" -o /dev/null && echo "OK" || echo "App may be sleeping"
+          MAX_RETRIES=3
+          RETRY_DELAY=5
+          SUCCESS=false
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "=== Attempt $i / $MAX_RETRIES ==="
+
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 30 \
+              --connect-timeout 10 \
+              -H "User-Agent: KeepAlive-GHA/1.0" \
+              "$APP_URL" 2>&1) || HTTP_CODE="000"
+
+            echo "HTTP Status: $HTTP_CODE"
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 301 ] || [ "$HTTP_CODE" -eq 302 ]; then
+              echo "App is alive (HTTP $HTTP_CODE)"
+              SUCCESS=true
+              break
+            fi
+
+            echo "Ping failed (HTTP $HTTP_CODE), retrying in ${RETRY_DELAY}s..."
+            sleep $RETRY_DELAY
+          done
+
+          if [ "$SUCCESS" = false ]; then
+            echo "::warning::App may be down after $MAX_RETRIES attempts (last HTTP $HTTP_CODE)"
+            # exit 0으로 두어 workflow 자체는 실패하지 않도록 (알림 폭탄 방지)
+          fi
+
+      - name: Ping healthcheck endpoint
+        env:
+          APP_URL: "https://ad-report.streamlit.app/"
+        run: |
+          # _stcore/health 엔드포인트로 Streamlit 내부 상태 확인
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 15 \
+            "${APP_URL}_stcore/health" 2>&1) || HEALTH_CODE="000"
+
+          echo "Streamlit health check: HTTP $HEALTH_CODE"
