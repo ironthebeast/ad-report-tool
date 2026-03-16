@@ -350,6 +350,11 @@ def analyze_violation(evidence: dict) -> dict:
     disclosure_source = evidence.get('ad_disclosure_source', '')
     image_details = evidence.get('image_disclosure_details', [])
 
+    # 광고 표시 텍스트 자체가 경제적 이해관계의 증거 → 어필리에이트로 간주
+    # (예: "수익이 발생하는 링크가 포함", "수수료가 지급됩니다")
+    if has_disclosure and not has_affiliate:
+        has_affiliate = True
+
     if has_affiliate and not has_disclosure:
         analysis['violation_detected'] = True
         analysis['violation_types'].append('경제적 이해관계 미표시 (추천·보증 심사지침 위반)')
