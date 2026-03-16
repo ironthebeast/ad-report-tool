@@ -117,6 +117,16 @@ def capture_screenshot(url: str, save_dir: str) -> dict:
                 '#광고', '#ad', '광고포함', '협찬', '유료광고', '경제적 대가',
                 '소정의 원고료', '대가를 받', '협찬을 받', '#sponsored',
                 '광고 포함', '파트너십', '제휴 링크',
+                # 네이버 블로그 / 크리에이터 어필리에이트 표시
+                '수익이 발생', '수수료가 지급', '수수료를 지급',
+                '크리에이터 활동을 통해', '링크가 포함',
+                '대가성', '원고료를 받', '무상으로 제공',
+                '제품을 제공', '서비스를 제공받', '물품을 제공',
+                # 추가 일반 패턴
+                '이 포스팅은 광고', '이 글은 광고', '광고입니다',
+                '#유료', 'paid partnership', '#partnership',
+                '쿠팡 파트너스', '수익을 얻', '수익이 창출',
+                '활동의 일환', '일정액의 수수료', '소정의 수수료',
             ]
             text_lower = body_text.lower()
             for kw in ad_keywords:
@@ -378,7 +388,12 @@ def analyze_violation(evidence: dict) -> dict:
             # 텍스트에서 발견된 경우 — 기존 로직
             text = evidence.get('page_text', '')
             first_500 = text[:500].lower()
-            ad_in_first = any(kw.lower() in first_500 for kw in ['#광고', '#ad', '협찬', '유료광고'])
+            ad_in_first = any(kw.lower() in first_500 for kw in [
+                '#광고', '#ad', '협찬', '유료광고',
+                '수익이 발생', '수수료가 지급', '크리에이터 활동',
+                '링크가 포함', '광고입니다', '대가성',
+                '일정액의 수수료', '소정의 수수료',
+            ])
             if not ad_in_first:
                 analysis['violation_detected'] = True
                 analysis['violation_types'].append('경제적 이해관계 표시 위치 부적절 (게시물 첫부분 미표시)')
