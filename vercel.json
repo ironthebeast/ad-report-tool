@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "functions": {
+    "api/capture.js": { "maxDuration": 60, "includeFiles": "fonts/**" },
+    "api/report.js": { "maxDuration": 30, "includeFiles": "fonts/**" }
+  }
+}

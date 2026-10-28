@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>뒷광고 신고 도우미</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="사이드바 열기">☰</button>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-close" id="sidebarClose" aria-label="사이드바 닫기">✕</button>
+    <h3>⚖️ 뒷광고 신고 도우미</h3>
+    <hr>
+    <p><strong>사용 방법</strong></p>
+    <ol>
+      <li>위반 콘텐츠 URL 입력</li>
+      <li>자동 증거 수집 실행</li>
+      <li>HWP 양식 기반 정보 입력</li>
+      <li>PDF 신고서 다운로드</li>
+      <li>아래 중 택1 제출:
+        <ul>
+          <li><strong>공정위</strong> (<a href="https://www.ftc.go.kr/www/contents.do?key=656" target="_blank" rel="noopener">신고서식+안내</a>)</li>
+          <li><strong>국민신문고</strong> (<a href="https://www.epeople.go.kr" target="_blank" rel="noopener">민원신청</a>)</li>
+        </ul>
+      </li>
+    </ol>
+    <hr>
+    <p><strong>관련 법률</strong></p>
+    <ul>
+      <li>표시·광고의 공정화에 관한 법률</li>
+      <li>추천·보증 등에 관한 표시·광고 심사지침</li>
+    </ul>
+    <p><strong>신고 대상</strong></p>
+    <ul>
+      <li>경제적 이해관계 미표시 (뒷광고)</li>
+      <li>허위·과장 광고</li>
+      <li>기만적 광고</li>
+    </ul>
+    <hr>
+    <p class="caption">공정거래위원회 민원: 1670-0007</p>
+    <p class="caption">소비자 상담: 1372</p>
+  </aside>
+
+  <main class="main">
+    <div class="block-container">
+      <p class="main-header">⚖️ 뒷광고 신고 도우미 (HWP 양식)</p>
+      <p class="sub-header">위반 URL 입력 → 증거 수집 → HWP 별지 제6호 서식 기반 PDF 생성</p>
+
+      <!-- STEP 1 -->
+      <p><span class="step-badge">STEP 1</span> <strong>위반 콘텐츠 URL 입력 &amp; 증거 수집</strong></p>
+      <div class="row url-row">
+        <input type="url" id="targetUrl" class="input" placeholder="https://instagram.com/p/... 또는 블로그/유튜브 URL">
+        <button class="btn" id="captureBtn">🔍 증거 수집</button>
+      </div>
+      <div id="captureStatus"></div>
+
+      <p><strong>또는</strong> 직접 스크린샷을 첨부할 수도 있습니다:</p>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+        <span class="dz-icon">☁️</span>
+        <span><strong>파일을 끌어다 놓거나 클릭해서 선택</strong><br><small>PNG, JPG, JPEG, GIF, WEBP · 여러 장 가능</small></span>
+        <span class="btn-secondary">파일 선택</span>
+      </label>
+      <div id="uploadList"></div>
+
+      <div id="evidenceResult"></div>
+
+      <hr>
+
+      <!-- STEP 2 -->
+      <p><span class="step-badge">STEP 2</span> <strong>HWP 별지 제6호 서식 기반 정보 입력</strong></p>
+      <p class="caption">(*) 표시는 필수 항목입니다. HWP 양식과 동일한 구조로 입력하세요.</p>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="tab1" role="tab">👤 신고인</button>
+        <button class="tab" data-tab="tab2" role="tab">🏢 피신고인</button>
+        <button class="tab" data-tab="tab3" role="tab">📝 신고내용</button>
+        <button class="tab" data-tab="tab4" role="tab">✅ 사전점검표 + 기타</button>
+      </div>
+
+      <section class="tab-panel active" id="tab1">
+        <h4>신고인 정보</h4>
+        <div class="cols">
+          <div>
+            <label class="field">성명 *<input class="input" id="r_name"></label>
+            <label class="field">주소 *<input class="input" id="r_addr"></label>
+            <label class="field">전화번호 *<input class="input" id="r_phone" placeholder="010-1234-5678"></label>
+            <label class="field">팩스번호<input class="input" id="r_fax"></label>
+          </div>
+          <div>
+            <label class="field">생년월일 *<input class="input" id="r_birth" placeholder="1990-01-01"></label>
+            <label class="field">휴대폰<input class="input" id="r_mobile" placeholder="010-1234-5678"></label>
+            <label class="field">이메일<input class="input" id="r_email" type="email"></label>
+          </div>
+        </div>
+        <p><strong>피신고인과의 관계 *:</strong></p>
+        <div class="radios" id="relationship">
+          <label><input type="radio" name="rel" value="소비자" checked> 소비자</label>
+          <label><input type="radio" name="rel" value="행정기관"> 행정기관</label>
+          <label><input type="radio" name="rel" value="사회단체"> 사회단체</label>
+          <label><input type="radio" name="rel" value="경쟁사업자"> 경쟁사업자</label>
+          <label><input type="radio" name="rel" value="구성사업자"> 구성사업자</label>
+          <label><input type="radio" name="rel" value="기타"> 기타</label>
+        </div>
+        <label class="field" id="otherRelWrap" hidden>기타 관계 구체적으로<input class="input" id="other_rel"></label>
+      </section>
+
+      <section class="tab-panel" id="tab2">
+        <h4>피신고인 정보</h4>
+        <div class="cols">
+          <div>
+            <label class="field">사업자명 *<input class="input" id="resp_name" placeholder="@계정명 또는 상호"></label>
+            <label class="field">주소 또는 전화번호 *<textarea class="input" id="resp_addr_phone" rows="3" placeholder="서울시 강남구... 또는 02-123-4567"></textarea></label>
+          </div>
+          <div>
+            <label class="field">대표자 성명<input class="input" id="resp_rep"></label>
+            <label class="field">관련부서 및 담당자<input class="input" id="resp_dept"></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab3">
+        <h4>신고내용</h4>
+        <div class="cols">
+          <label class="field">표시·광고 매체 *
+            <select class="input" id="content_media">
+              <option>인스타그램</option><option>유튜브</option><option>블로그 (네이버)</option>
+              <option>블로그 (기타)</option><option>트위터/X</option><option>페이스북</option>
+              <option>틱톡</option><option>카페/커뮤니티</option><option>기타 웹사이트</option>
+            </select>
+          </label>
+          <label class="field">표시·광고 일자 *<input class="input" id="content_date" type="date"></label>
+        </div>
+        <label class="field">표시·광고의 내용 * <span class="help" title="자동 분석 결과가 있으면 참고하여 작성하세요.">ⓘ</span>
+          <textarea class="input" id="content_desc" rows="5" placeholder="광고 콘텐츠의 구체적인 내용을 설명하세요. (상품명, 효과, 추천 문구 등)"></textarea>
+        </label>
+        <label class="field">표시·광고가 위법하다고 주장하는 이유 * <span class="help" title="자동 분석 결과를 수정/보완할 수 있습니다.">ⓘ</span>
+          <textarea class="input" id="violation_reason" rows="6"></textarea>
+        </label>
+      </section>
+
+      <section class="tab-panel" id="tab4">
+        <h4>위반행위 사전점검표</h4>
+        <p class="caption">해당하는 위반 유형을 체크하세요.</p>
+        <div class="cols">
+          <div class="checks">
+            <p><strong>제3조 (부당한 표시ㆍ광고 행위의 금지)</strong></p>
+            <label><input type="checkbox" id="check_1_1"> 1-① 거짓·과장 표시ㆍ광고</label>
+            <label><input type="checkbox" id="check_1_2"> 1-② 기만적 표시ㆍ광고</label>
+            <label><input type="checkbox" id="check_1_3"> 1-③ 부당비교 표시ㆍ광고</label>
+            <label><input type="checkbox" id="check_1_4"> 1-④ 비방적 표시ㆍ광고</label>
+          </div>
+          <div class="checks">
+            <p><strong>기타 위반행위</strong></p>
+            <label><input type="checkbox" id="check_2"> 2. 중요정보 미고시</label>
+            <label><input type="checkbox" id="check_3"> 3. 사업자단체의 표시ㆍ광고 제한행위</label>
+            <label><input type="checkbox" id="check_4"> 4. 기타</label>
+          </div>
+        </div>
+        <hr>
+        <h4>첨부자료 및 신분공개</h4>
+        <label class="field">첨부자료 설명<input class="input" id="attachment_desc" value="신고 대상 표시·광고물 또는 그 사본"></label>
+        <p><strong>신고인 신분공개 동의여부:</strong></p>
+        <div class="radios">
+          <label><input type="radio" name="identity" value="공개"> 공개</label>
+          <label><input type="radio" name="identity" value="비공개" checked> 비공개</label>
+          <label><input type="radio" name="identity" value="사건 조치 후 공개"> 사건 조치 후 공개</label>
+        </div>
+        <label class="field">추가 참고사항 (첨부2 양식에 포함)
+          <textarea class="input" id="additional_notes" rows="4" placeholder="추가로 신고하고 싶은 상세 내용이 있으면 입력하세요."></textarea>
+        </label>
+      </section>
+
+      <hr>
+
+      <!-- STEP 3 -->
+      <p><span class="step-badge">STEP 3</span> <strong>PDF 신고서 생성 &amp; 다운로드</strong></p>
+      <button class="btn btn-block" id="generateBtn">📄 HWP 양식 기반 PDF 생성</button>
+      <div id="reportResult"></div>
+
+      <hr>
+
+      <!-- STEP 4 -->
+      <p><span class="step-badge">STEP 4</span> <strong>신고 제출</strong></p>
+      <p class="caption">생성된 PDF 파일을 아래 사이트 중 하나에 제출하세요.</p>
+      <div class="cols submit-cols">
+        <div>
+          <p><strong>🏛️ 공정거래위원회 신고</strong></p>
+          <ul>
+            <li><strong>사이트</strong>: <a href="https://www.ftc.go.kr/www/contents.do?key=656" target="_blank" rel="noopener">공정위 신고서식 안내</a></li>
+            <li><strong>장점</strong>: 신고서식 다운로드 + 국민신문고 연동</li>
+            <li><strong>준비물</strong>: 생성한 PDF + 증거 스크린샷</li>
+            <li><strong>참고</strong>: 불공정거래신고는 국민신문고를 통해 접수됩니다</li>
+          </ul>
+          <a class="btn-link" href="https://www.ftc.go.kr/www/contents.do?key=656" target="_blank" rel="noopener">🔗 공정위 신고 안내 바로가기</a>
+        </div>
+        <div>
+          <p><strong>🏛️ 국민신문고 민원신청</strong></p>
+          <ul>
+            <li><strong>사이트</strong>: <a href="https://www.epeople.go.kr" target="_blank" rel="noopener">국민신문고</a></li>
+            <li><strong>장점</strong>: 처리 과정 추적 가능</li>
+            <li><strong>기관 선택</strong>: 공정거래위원회</li>
+          </ul>
+          <a class="btn-link" href="https://www.epeople.go.kr" target="_blank" rel="noopener">🔗 국민신문고 바로가기</a>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>📋 제출 시 참고사항</strong><br>
+        • <strong>PDF 신고서</strong>: 방금 생성한 파일을 첨부하세요<br>
+        • <strong>증거자료</strong>: 스크린샷도 함께 첨부하세요<br>
+        • <strong>처리기간</strong>: 일반적으로 30일 내외 (사안에 따라 변동)<br>
+        • <strong>문의전화</strong>: 공정위 상담센터 1670-0007
+      </div>
+
+      <details class="expander">
+        <summary>⚠️ 중요 법적 고지사항</summary>
+        <div>
+          <p><strong>허위 신고 금지</strong></p>
+          <ul>
+            <li>고의로 허위 사실을 신고하면 법적 처벌을 받을 수 있습니다.</li>
+            <li>확실한 증거가 있는 경우에만 신고해주세요.</li>
+          </ul>
+          <p><strong>개인정보 보호</strong></p>
+          <ul>
+            <li>입력하신 개인정보는 신고서 생성에만 사용되며 서버에 저장되지 않습니다.</li>
+            <li>브라우저를 닫으면 모든 정보가 삭제됩니다.</li>
+          </ul>
+          <p><strong>면책 조항</strong></p>
+          <ul>
+            <li>이 도구는 신고서 작성을 도와드리는 것이며, 신고 결과에 대한 책임은 신고자에게 있습니다.</li>
+            <li>법적 조언이 필요한 경우 전문가와 상담하시기 바랍니다.</li>
+          </ul>
+        </div>
+      </details>
+
+      <hr>
+      <footer class="footer">
+        <p>⚖️ <strong>뒷광고 신고 도우미</strong> — 건전한 디지털 광고 환경 조성을 위해</p>
+        <p>HWP 별지 제6호 서식 기반 • PDF 출력 • 공정거래위원회 호환</p>
+      </footer>
+    </div>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
